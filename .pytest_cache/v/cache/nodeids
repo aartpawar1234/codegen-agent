@@ -1,10 +1,8 @@
 [
-  "tests/test_math_utils.py::TestAdd::test_add_floats_raises_type_error",
-  "tests/test_math_utils.py::TestAdd::test_add_large_numbers",
-  "tests/test_math_utils.py::TestAdd::test_add_mixed_numbers",
-  "tests/test_math_utils.py::TestAdd::test_add_negative_numbers",
-  "tests/test_math_utils.py::TestAdd::test_add_none_raises_type_error",
-  "tests/test_math_utils.py::TestAdd::test_add_positive_numbers",
-  "tests/test_math_utils.py::TestAdd::test_add_strings_raises_type_error",
-  "tests/test_math_utils.py::TestAdd::test_add_zero"
+  "tests/test_greet.py::TestGreet::test_greet_basic",
+  "tests/test_greet.py::TestGreet::test_greet_empty_string",
+  "tests/test_greet.py::TestGreet::test_greet_non_string_input",
+  "tests/test_greet.py::TestGreet::test_greet_none_input",
+  "tests/test_greet.py::TestGreet::test_greet_special_chars",
+  "tests/test_greet.py::TestGreet::test_greet_whitespace"
 ]

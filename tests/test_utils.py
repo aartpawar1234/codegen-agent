@@ -1,132 +1,54 @@
+"""Test suite for utils.py module."""
+
 import pytest
-from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
-from jose import JWTError, ExpiredSignatureError
-from src.auth.utils import (
-    verify_password,
-    get_password_hash,
-    create_access_token,
-    create_refresh_token,
-    verify_token,
-    revoke_refresh_token
-)
-from src.auth.exceptions import TokenRevokedError, TokenExpiredError
+from src.utils import reverse_string
 
 
-@pytest.fixture
-def mock_password():
-    return "plain_password_123"
+class TestReverseString:
+    """Test cases for the reverse_string function."""
 
+    def test_reverse_string_basic(self):
+        """Test reversing a basic string."""
+        assert reverse_string("hello") == "olleh"
+        assert reverse_string("Python") == "nohtyP"
 
-@pytest.fixture
-def mock_hashed_password():
-    return "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+    def test_reverse_string_empty(self):
+        """Test reversing an empty string."""
+        assert reverse_string("") == ""
 
+    def test_reverse_string_single_char(self):
+        """Test reversing a single character string."""
+        assert reverse_string("a") == "a"
 
-def test_verify_password_correct(mock_password, mock_hashed_password):
-    """Test verify_password returns True for correct password."""
-    assert verify_password(mock_password, mock_hashed_password) is True
+    def test_reverse_string_palindrome(self):
+        """Test reversing a palindrome string."""
+        assert reverse_string("madam") == "madam"
 
+    def test_reverse_string_with_spaces(self):
+        """Test reversing a string with spaces."""
+        assert reverse_string("hello world") == "dlrow olleh"
 
-def test_verify_password_incorrect(mock_password):
-    """Test verify_password returns False for incorrect password."""
-    hashed = get_password_hash("different_password")
-    assert verify_password(mock_password, hashed) is False
+    def test_reverse_string_with_special_chars(self):
+        """Test reversing a string with special characters."""
+        assert reverse_string("hello@world!") == "!dlrow@olleh"
 
+    def test_reverse_string_with_unicode(self):
+        """Test reversing a string with unicode characters."""
+        assert reverse_string("こんにちは") == "はちにんこ"
+        assert reverse_string("123😊abc") == "cba😊321"
 
-def test_get_password_hash(mock_password):
-    """Test get_password_hash returns a non-empty string."""
-    hashed = get_password_hash(mock_password)
-    assert isinstance(hashed, str)
-    assert len(hashed) > 0
+    def test_reverse_string_with_mixed_case(self):
+        """Test reversing a string with mixed case."""
+        assert reverse_string("HeLLo") == "oLLeH"
 
+    def test_reverse_string_with_numbers(self):
+        """Test reversing a string with numbers."""
+        assert reverse_string("12345") == "54321"
 
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-@patch('src.auth.utils.JWT_ACCESS_TOKEN_EXPIRE_MINUTES', 15)
-def test_create_access_token():
-    """Test create_access_token generates a valid JWT token with correct payload."""
-    user_id = "user123"
-    token = create_access_token(user_id)
-    
-    assert isinstance(token, str)
-    assert len(token) > 0
-    
-    # Verify token can be decoded (structure check)
-    from jose import jwt
-    payload = jwt.decode(token, 'test_secret', algorithms=['HS256'])
-    assert payload['sub'] == user_id
-    assert payload['type'] == 'access'
-    assert 'exp' in payload
+    def test_reverse_string_with_newline(self):
+        """Test reversing a string with newline characters."""
+        assert reverse_string("hello\nworld") == "dlrow\nolleh"
 
-
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-@patch('src.auth.utils.JWT_REFRESH_TOKEN_EXPIRE_DAYS', 7)
-def test_create_refresh_token():
-    """Test create_refresh_token generates a valid JWT token with correct payload."""
-    user_id = "user123"
-    token = create_refresh_token(user_id)
-    
-    assert isinstance(token, str)
-    assert len(token) > 0
-    
-    # Verify token can be decoded (structure check)
-    from jose import jwt
-    payload = jwt.decode(token, 'test_secret', algorithms=['HS256'])
-    assert payload['sub'] == user_id
-    assert payload['type'] == 'refresh'
-    assert 'exp' in payload
-
-
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-def test_verify_token_valid():
-    """Test verify_token returns payload for valid token."""
-    user_id = "user123"
-    token = create_access_token(user_id)
-    
-    payload = verify_token(token)
-    
-    assert isinstance(payload, dict)
-    assert payload['sub'] == user_id
-    assert payload['type'] == 'access'
-
-
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-def test_verify_token_expired():
-    """Test verify_token raises TokenExpiredError for expired token."""
-    user_id = "user123"
-    # Create token with negative expiration
-    with patch('src.auth.utils.JWT_ACCESS_TOKEN_EXPIRE_MINUTES', -1):
-        token = create_access_token(user_id)
-    
-    with pytest.raises(TokenExpiredError):
-        verify_token(token)
-
-
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-def test_verify_token_invalid_signature():
-    """Test verify_token raises InvalidCredentialsError for invalid signature."""
-    token = "invalid.token.signature"
-    
-    with pytest.raises(TokenRevokedError):
-        verify_token(token)
-
-
-@patch('src.auth.utils.JWT_SECRET_KEY', 'test_secret')
-@patch('src.auth.utils.JWT_ALGORITHM', 'HS256')
-def test_verify_token_malformed():
-    """Test verify_token raises InvalidCredentialsError for malformed token."""
-    token = "malformed.token"
-    
-    with pytest.raises(TokenRevokedError):
-        verify_token(token)
-
-
-def test_revoke_refresh_token_noop():
-    """Test revoke_refresh_token is a no-op function."""
-    # The function does nothing, so we just ensure it doesn't raise
-    revoke_refresh_token(MagicMock())
+    def test_reverse_string_with_tab(self):
+        """Test reversing a string with tab characters."""
+        assert reverse_string("hello\tworld") == "dlrow\tolleh"

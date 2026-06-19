@@ -1,1 +1,7 @@
-{}
+{
+  "tests/test_cli.py::test_cli_add_task": true,
+  "tests/test_cli.py::test_cli_list_tasks_empty": true,
+  "tests/test_cli.py::test_cli_complete_task": true,
+  "tests/test_cli.py::test_cli_remove_task": true,
+  "tests/test_storage.py::test_load_tasks_empty_file": true
+}

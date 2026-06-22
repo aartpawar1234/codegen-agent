@@ -1,50 +1,57 @@
 """
-Handles persistence of to-do list data.
-
-Provides functions to save and load tasks from a file.
+Handles persistent storage of tasks using JSON files.
 """
 import json
 from pathlib import Path
-from typing import Optional
+from typing import List
 
-from src.models import TaskList
-
-
-DEFAULT_STORAGE_PATH = Path.home() / ".todo_list" / "tasks.json"
+from src.models import Task
 
 
-def save_tasks(task_list: TaskList, storage_path: Optional[Path] = None) -> None:
+def save_tasks(tasks: List[Task], filepath: str = "tasks.json") -> None:
     """
-    Save the task list to a file.
+    Save a list of tasks to a JSON file.
 
     Args:
-        task_list (TaskList): The task list to save.
-        storage_path (Optional[Path]): Path to the storage file. Defaults to DEFAULT_STORAGE_PATH.
+        tasks (List[Task]): List of tasks to save.
+        filepath (str): Path to the JSON file. Defaults to "tasks.json".
     """
-    storage_path = storage_path or DEFAULT_STORAGE_PATH
-    storage_path.parent.mkdir(parents=True, exist_ok=True)
+    task_data = [
+        {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "completed": task.completed,
+        }
+        for task in tasks
+    ]
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(task_data, f, indent=4)
 
-    data = task_list.to_dict()
-    with storage_path.open("w") as f:
-        json.dump(data, f, indent=2)
 
-
-def load_tasks(storage_path: Optional[Path] = None) -> TaskList:
+def load_tasks(filepath: str = "tasks.json") -> List[Task]:
     """
-    Load the task list from a file.
+    Load a list of tasks from a JSON file.
 
     Args:
-        storage_path (Optional[Path]): Path to the storage file. Defaults to DEFAULT_STORAGE_PATH.
+        filepath (str): Path to the JSON file. Defaults to "tasks.json".
 
     Returns:
-        TaskList: The loaded task list.
+        List[Task]: List of tasks loaded from the file.
     """
-    storage_path = storage_path or DEFAULT_STORAGE_PATH
+    if not Path(filepath).exists():
+        return []
 
-    if not storage_path.exists():
-        return TaskList()
+    with open(filepath, "r", encoding="utf-8") as f:
+        task_data = json.load(f)
 
-    with storage_path.open("r") as f:
-        data = json.load(f)
-
-    return TaskList.from_dict(data)
+    tasks = [
+        Task(
+            id=task["id"],
+            title=task["title"],
+            description=task.get("description"),
+            completed=task.get("completed", False),
+        )
+        for task in task_data
+    ]
+    return tasks

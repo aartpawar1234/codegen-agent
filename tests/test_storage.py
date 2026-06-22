@@ -1,82 +1,96 @@
 """
-Tests for the storage module.
-
-Tests save_tasks and load_tasks functions.
+Tests for the storage module (save_tasks and load_tasks functions).
 """
-import pytest
 import json
+import tempfile
 from pathlib import Path
-from src.models import Task, TaskList
-from src.storage import save_tasks, load_tasks, DEFAULT_STORAGE_PATH
+from src.models import Task
+from src.storage import save_tasks, load_tasks
 
 
-@pytest.fixture
-def temp_storage_path(tmp_path):
-    """Fixture to provide a temporary storage path."""
-    return tmp_path / "tasks.json"
+class TestStorage:
+    """Test cases for the storage module."""
 
-
-def test_save_tasks(tmp_path):
-    """Test saving a TaskList to a file."""
-    task = Task(id="1", title="Test Task", description="Test Description")
-    task_list = TaskList([task])
-    storage_path = tmp_path / "tasks.json"
-
-    save_tasks(task_list, storage_path)
-
-    assert storage_path.exists()
-    with storage_path.open("r") as f:
-        data = json.load(f)
-    assert data["tasks"][0]["id"] == "1"
-
-
-def test_load_tasks_empty_file(tmp_path):
-    """Test loading an empty task list from a file."""
-    storage_path = tmp_path / "tasks.json"
-    storage_path.touch()  # Create empty file
-
-    task_list = load_tasks(storage_path)
-    assert task_list.tasks == []
-
-
-def test_load_tasks_nonexistent_file(tmp_path):
-    """Test loading from a nonexistent file."""
-    storage_path = tmp_path / "nonexistent.json"
-    task_list = load_tasks(storage_path)
-    assert task_list.tasks == []
-
-
-def test_load_tasks_with_data(tmp_path):
-    """Test loading a TaskList with data from a file."""
-    data = {
-        "tasks": [
-            {
-                "id": "1",
-                "title": "Test Task",
-                "description": "Test Description",
-                "completed": False,
-                "created_at": "2023-01-01T00:00:00",
-                "completed_at": None,
-            }
+    def test_save_and_load_tasks(self):
+        """Test saving and loading tasks from a JSON file."""
+        tasks = [
+            Task(id=1, title="Task 1", description="Description 1", completed=False),
+            Task(id=2, title="Task 2", description="Description 2", completed=True),
         ]
-    }
-    storage_path = tmp_path / "tasks.json"
-    with storage_path.open("w") as f:
-        json.dump(data, f)
 
-    task_list = load_tasks(storage_path)
-    assert len(task_list.tasks) == 1
-    assert task_list.tasks[0].id == "1"
-    assert task_list.tasks[0].title == "Test Task"
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_path = Path(tmp_file.name)
 
+        try:
+            # Save tasks
+            save_tasks(tasks, tmp_path)
 
-def test_save_tasks_default_path(tmp_path, monkeypatch):
-    """Test saving to the default storage path."""
-    monkeypatch.setattr("src.storage.DEFAULT_STORAGE_PATH", tmp_path / "default_tasks.json")
+            # Verify file exists and contains expected data
+            assert tmp_path.exists()
+            with tmp_path.open("r") as f:
+                saved_data = json.load(f)
+            assert len(saved_data) == 2
+            assert saved_data[0]["id"] == 1
+            assert saved_data[0]["title"] == "Task 1"
+            assert saved_data[0]["description"] == "Description 1"
+            assert saved_data[0]["completed"] is False
+            assert saved_data[1]["id"] == 2
+            assert saved_data[1]["title"] == "Task 2"
+            assert saved_data[1]["description"] == "Description 2"
+            assert saved_data[1]["completed"] is True
 
-    task = Task(id="1", title="Test Task")
-    task_list = TaskList([task])
-    save_tasks(task_list)
+            # Load tasks
+            loaded_tasks = load_tasks(tmp_path)
+            assert len(loaded_tasks) == 2
+            assert loaded_tasks[0].id == 1
+            assert loaded_tasks[0].title == "Task 1"
+            assert loaded_tasks[0].description == "Description 1"
+            assert loaded_tasks[0].completed is False
+            assert loaded_tasks[1].id == 2
+            assert loaded_tasks[1].title == "Task 2"
+            assert loaded_tasks[1].description == "Description 2"
+            assert loaded_tasks[1].completed is True
 
-    default_path = tmp_path / "default_tasks.json"
-    assert default_path.exists()
+        finally:
+            # Clean up
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+    def test_load_tasks_nonexistent_file(self):
+        """Test loading tasks from a non-existent file."""
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_path = Path(tmp_file.name)
+
+        try:
+            # Ensure file does not exist
+            tmp_path.unlink()
+            assert not tmp_path.exists()
+
+            # Load tasks (should return empty list)
+            loaded_tasks = load_tasks(tmp_path)
+            assert loaded_tasks == []
+
+        finally:
+            # Clean up (no-op if file doesn't exist)
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+    def test_save_and_load_empty_tasks(self):
+        """Test saving and loading an empty list of tasks."""
+        tasks = []
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_path = Path(tmp_file.name)
+
+        try:
+            # Save tasks
+            save_tasks(tasks, tmp_path)
+
+            # Load tasks
+            loaded_tasks = load_tasks(tmp_path)
+            assert loaded_tasks == []
+
+        finally:
+            # Clean up
+            if tmp_path.exists():
+                tmp_path.unlink()

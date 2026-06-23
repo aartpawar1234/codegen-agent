@@ -1,18 +1,20 @@
 from pydantic import BaseModel
 
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+class TodoBase(BaseModel):
+    title: str
+    description: str = ""
+    completed: int = 0
 
-class LoginResponse(BaseModel):
-    access_token: str
-    refresh_token: str
+class TodoCreate(TodoBase):
+    pass
 
-class LogoutRequest(BaseModel):
-    refresh_token: str
+class TodoUpdate(BaseModel):
+    title: str = None
+    description: str = None
+    completed: int = None
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
+class TodoResponse(TodoBase):
+    id: int
 
-class RefreshResponse(BaseModel):
-    access_token: str
+    class Config:
+        orm_mode = True

@@ -1,27 +1,8 @@
-"""
-Database connection and session management using SQLAlchemy.
-"""
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from src.config import settings
+from .config import settings
 
-# Create SQLAlchemy engine
-engine = create_engine(settings.database_url, pool_pre_ping=True)
-
-# Create session factory
+engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()
-
-
-# Dependency to get DB session
-def get_db():
-    """Dependency to provide a database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

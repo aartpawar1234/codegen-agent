@@ -1,4 +1,4 @@
 {
-  "tests/test_auth.py": true,
-  "tests/test_crud.py": true
+  "tests/test_crud.py": true,
+  "tests/test_main.py": true
 }

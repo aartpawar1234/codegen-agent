@@ -1,13 +1,1 @@
-[
-  "tests/test_models.py::TestTask::test_task_default_values",
-  "tests/test_models.py::TestTask::test_task_initialization",
-  "tests/test_models.py::TestTaskList::test_add_task",
-  "tests/test_models.py::TestTaskList::test_get_task_failure",
-  "tests/test_models.py::TestTaskList::test_get_task_success",
-  "tests/test_models.py::TestTaskList::test_list_tasks",
-  "tests/test_models.py::TestTaskList::test_remove_task_failure",
-  "tests/test_models.py::TestTaskList::test_remove_task_success",
-  "tests/test_storage.py::TestStorage::test_load_tasks_nonexistent_file",
-  "tests/test_storage.py::TestStorage::test_save_and_load_empty_tasks",
-  "tests/test_storage.py::TestStorage::test_save_and_load_tasks"
-]
+[]

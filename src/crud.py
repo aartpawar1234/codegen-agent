@@ -1,23 +1,36 @@
 from sqlalchemy.orm import Session
-from .models import User, TokenBlacklist
+from . import models, schemas
 
 
-def get_user_by_email(db: Session, email: str) -> User:
-    return db.query(User).filter(User.email == email).first()
+def get_todo(db: Session, todo_id: int):
+    return db.query(models.Todo).filter(models.Todo.id == todo_id).first()
 
 
-def create_token(db: Session, token: str) -> TokenBlacklist:
-    db_token = TokenBlacklist(token=token)
-    db.add(db_token)
+def get_all_todos(db: Session):
+    return db.query(models.Todo).all()
+
+
+def create_todo(db: Session, todo: schemas.TodoCreate):
+    db_todo = models.Todo(**todo.dict())
+    db.add(db_todo)
     db.commit()
-    db.refresh(db_token)
-    return db_token
+    db.refresh(db_todo)
+    return db_todo
 
 
-def revoke_token(db: Session, token: str):
-    db.query(TokenBlacklist).filter(TokenBlacklist.token == token).delete()
-    db.commit()
+def update_todo(db: Session, todo_id: int, todo: schemas.TodoUpdate):
+    db_todo = get_todo(db, todo_id)
+    if db_todo:
+        for key, value in todo.dict(exclude_unset=True).items():
+            setattr(db_todo, key, value)
+        db.commit()
+        db.refresh(db_todo)
+    return db_todo
 
 
-def is_token_revoked(db: Session, token: str) -> bool:
-    return db.query(TokenBlacklist).filter(TokenBlacklist.token == token).first() is not None
+def delete_todo(db: Session, todo_id: int):
+    db_todo = get_todo(db, todo_id)
+    if db_todo:
+        db.delete(db_todo)
+        db.commit()
+    return db_todo

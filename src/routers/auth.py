@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from .. import crud, schemas, auth
-from ..database import SessionLocal
+from src import schemas, crud
+from src.utils import security
+from src.database import SessionLocal
 
 router = APIRouter()
 
-
+# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:
@@ -13,27 +14,31 @@ def get_db():
     finally:
         db.close()
 
-
-@router.post("/login", response_model=schemas.LoginResponse)
-async def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
-    user = crud.get_user_by_email(db, request.email)
-    if not user or not user.hashed_password == request.password:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-    access_token = auth.create_access_token(user.email)
-    refresh_token = auth.create_refresh_token(user.email)
-    return schemas.LoginResponse(access_token=access_token, refresh_token=refresh_token)
-
+@router.post("/login", response_model=schemas.Token)
+async def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, user.email)
+    if not db_user or not security.verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = security.create_access_token(data={"sub": user.email})
+    refresh_token = security.create_refresh_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
 @router.post("/logout")
-async def logout(request: schemas.LogoutRequest, db: Session = Depends(get_db)):
-    crud.revoke_token(db, request.refresh_token)
+async def logout(token: str, db: Session = Depends(get_db)):
+    crud.add_token_to_blacklist(db, token)
     return {"msg": "Successfully logged out"}
 
-
-@router.post("/refresh", response_model=schemas.RefreshResponse)
-async def refresh(request: schemas.RefreshRequest, db: Session = Depends(get_db)):
-    if crud.is_token_revoked(db, request.refresh_token):
-        raise HTTPException(status_code=400, detail="Token has been revoked")
-    email = auth.decode_token(request.refresh_token)["sub"]
-    access_token = auth.create_access_token(email)
-    return schemas.RefreshResponse(access_token=access_token)
+@router.post("/refresh", response_model=schemas.Token)
+async def refresh(token: str, db: Session = Depends(get_db)):
+    if crud.is_token_blacklisted(db, token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is blacklisted")
+    payload = security.verify_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    access_token = security.create_access_token(data={"sub": payload["sub"]})
+    crud.add_token_to_blacklist(db, token)  # Blacklist the refresh token
+    return {"access_token": access_token, "token_type": "bearer"}

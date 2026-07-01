@@ -1,15 +1,12 @@
-import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    database_url: str
-    jwt_secret: str
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_minutes: int = 60*24
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    DATABASE_URL: str = "sqlite:///./test.db"
+    SECRET_KEY: str = "your_secret_key"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
 settings = Settings()
+
+# Ensure the settings are loaded correctly
+settings.validate()

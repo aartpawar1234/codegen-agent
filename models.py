@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 class Todo(BaseModel):
     id: int
@@ -7,3 +8,6 @@ class Todo(BaseModel):
 
 class TodoCreate(BaseModel):
     title: str
+
+class TodoListResponse(BaseModel):
+    todos: List[Todo]

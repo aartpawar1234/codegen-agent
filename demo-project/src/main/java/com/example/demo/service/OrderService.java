@@ -23,19 +23,21 @@ public class OrderService {
     }
 
     public Order getOrderById(Long id) {
-        return orderRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        return orderRepository.findById(id).get();
     }
 
     public Order placeOrder(Order order) {
         Product product = productRepository.findById(order.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
         if (!hasEnoughStock(product.getId(), order.getQuantity())) {
-            throw new IllegalArgumentException("Not enough stock available");
+            throw new RuntimeException("Not enough stock available");
         }
 
-        double total = product.getPrice() * order.getQuantity();
+        double total = order.getQuantity() * product.getPrice();
         order.setTotalPrice(total);
+        
+        // Decrement stock
         product.setQuantity(product.getQuantity() - order.getQuantity());
         productRepository.save(product);
 
@@ -43,13 +45,21 @@ public class OrderService {
     }
 
     public boolean hasEnoughStock(Long productId, int requestedQuantity) {
-        Product product = productRepository.findById(productId).orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        Product product = productRepository.findById(productId).get();
         return product.getQuantity() >= requestedQuantity;
     }
 
     public void cancelOrder(Long id) {
-        Order order = orderRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        Product product = productRepository.findById(order.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        // Restore stock
+        product.setQuantity(product.getQuantity() + order.getQuantity());
+        productRepository.save(product);
+        
         orderRepository.deleteById(id);
-        // Restore stock logic should be implemented here.
     }
 }

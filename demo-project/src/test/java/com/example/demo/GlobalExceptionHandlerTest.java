@@ -1,20 +1,26 @@
-package com.example.demo;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import static org.junit.jupiter.api.Assertions.*;
 
-class GlobalExceptionHandlerTest {
+@ControllerAdvice
+public class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler exceptionHandler = new GlobalExceptionHandler();
 
     @Test
-    void testHandleNotFound() {
-        String message = "Product not found";
-        ResponseEntity<String> response = exceptionHandler.handleNotFound(new IllegalArgumentException(message));
-
+    public void testHandleResourceNotFoundException() {
+        ResourceNotFoundException ex = new ResourceNotFoundException("Resource not found");
+        ResponseEntity<Object> response = exceptionHandler.handleResourceNotFoundException(ex);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals(message, response.getBody());
+    }
+
+    @Test
+    public void testHandleGenericException() {
+        Exception ex = new Exception("Generic exception");
+        ResponseEntity<Object> response = exceptionHandler.handleGenericException(ex);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 }

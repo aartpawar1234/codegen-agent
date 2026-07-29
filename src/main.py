@@ -1,20 +1,13 @@
-from calculator.calculator import Calculator
+from fastapi import FastAPI
+from src.routers import products_router, cart_router, orders_router, auth_router
 
+app = FastAPI()
 
-def main():
-    calc = Calculator()
-    print("Welcome to the Calculator!")
-    while True:
-        operation = input("Enter operation (add, subtract, multiply, divide, power, square_root) or 'exit' to quit: ")
-        if operation == 'exit':
-            break
-        args = list(map(float, input("Enter numbers separated by space: ").split()))
-        try:
-            result = calc.calculate(operation, *args)
-            print(f"Result: {result}")
-        except Exception as e:
-            print(f"Error: {e}")
+app.include_router(products_router.router)
+app.include_router(cart_router.router)
+app.include_router(orders_router.router)
+app.include_router(auth_router.router)
 
-
-if __name__ == '__main__':
-    main()
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
